@@ -1,0 +1,1 @@
+import jakc_redemption_point_adj
