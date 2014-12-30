@@ -89,7 +89,7 @@ class rdm_point_adj(osv.osv):
     def create(self, cr, uid, values, context=None):       
         values.update({'state':'open'})
         if values.get('adjust_type') == '+': 
-            if values.get('expired_date'):            
+            if len(values.get('adjust_type')) > 0:     
                 id =  super(rdm_point_adj, self).create(cr, uid, values, context=context)        
                 return id
             else:
