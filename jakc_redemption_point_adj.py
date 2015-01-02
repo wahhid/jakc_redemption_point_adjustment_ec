@@ -41,8 +41,7 @@ class rdm_point_adj(osv.osv):
     
     def trans_req_delete(self, cr, uid, ids, context=None):
         _logger.info("Delete Request for ID : " + str(ids[0]))
-        self.write(cr,uid,ids,{'state':'req_delete'},context=context) 
-        
+        self.write(cr,uid,ids,{'state':'req_delete'},context=context)         
         return True
     
     def trans_delete(self, cr, uid, ids, context=None):
@@ -63,12 +62,16 @@ class rdm_point_adj(osv.osv):
         point_data.update({'trans_type':'adjust'})
         if trans.adjust_type == '+':
             point_data.update({'point':trans.point})
-        if trans.adjust_type == '-':
-            point_data.update({'point':-1 * trans.point})                    
-        self.pool.get('rdm.customer.point').create(cr, uid, point_data, context=context)
+            point_data.update({'expired_date': trans.expired_date})
+            self.pool.get('rdm.customer.point').create(cr, uid, point_data, context=context)
+        if trans.adjust_type == '-':        
+            customer = self.pool.get('rdm.customer').get_trans(cr, uid, trans.customer_id.id, context=context)
+            if customer.point >= trans.point:                                            
+                self.pool.get('rdm.customer.point').deduct_point(cr, uid, trans_id, trans.customer_id.id, trans.point, context=context)                
+            else:                
+                raise osv.except_osv(('Warning'), ('Point not enough for adjustment!'))
         _logger.info('End Point Adjustment')
-        
-        
+                                                     
     _columns = {
         'trans_date': fields.date('Date',readonly=True),                                
         'customer_id': fields.many2one('rdm.customer','Customer', required=True),
@@ -89,7 +92,7 @@ class rdm_point_adj(osv.osv):
     def create(self, cr, uid, values, context=None):       
         values.update({'state':'open'})
         if values.get('adjust_type') == '+': 
-            if len(values.get('adjust_type')) > 0:     
+            if values.get('expired_date'):     
                 id =  super(rdm_point_adj, self).create(cr, uid, values, context=context)        
                 return id
             else:
